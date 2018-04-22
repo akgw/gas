@@ -36,18 +36,46 @@
     methods: {
       fetchBoard() {
         google.script.run.withSuccessHandler((fetchBoard) => {
-          this.board = fetchBoard
+          this.board = fetchBoard;
+          this.initBoard();
         }).withFailureHandler((error) => {
           console.log(error);
         }).sendFetchBoard();
       },
+      initBoard() {
+        const initStonePositionList = [
+          {column:3, row:3, stone: '○'},
+          {column:3, row:4, stone: '●'},
+          {column:4, row:3, stone: '●'},
+          {column:4, row:4, stone: '○'}
+        ];
+
+        if (this.board[4][4] === '　') {
+          for (const key in initStonePositionList) {
+            const initStone = initStonePositionList[key];
+            google.script.run.withSuccessHandler(() => {
+            }).withFailureHandler((error) => {
+              console.log(error);
+            }).sendPutStone(initStone['column'], initStone['row'], initStone['stone']);
+          }
+          this.fetchBoard();
+        }
+      },
       putStone(column, row, stone) {
+        if (this.puttableStone(column, row, stone) === false) {
+          alert("置けません");
+          return;
+        }
         google.script.run.withSuccessHandler(() => {
           this.tern = ( this.tern === 1 ) ? 2 : 1;
           this.fetchBoard();
         }).withFailureHandler((error) => {
             console.log(error);
         }).sendPutStone(column, row, stone);
+      },
+      puttableStone(column, row, stone) {
+        // todo 実装
+        return true;
       }
     }
   })
