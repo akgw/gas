@@ -6,11 +6,11 @@
 </head>
 <body>
 <div id="app">
-  {{ ternList[tern] }}のターン({{ tern }})
+  {{ turnList[turn] }}のターン({{ turn }})
   <table>
     <tr v-for="(columns, row) in board">
       <td v-for="(value, column) in columns">
-        <button @click="putStone(row, column, ternList[tern])">{{ value }}</button>
+        <button @click="putStone(row, column, turnList[turn])">{{ value }}</button>
       </td>
     </tr>
   </table>
@@ -23,11 +23,11 @@
   var app = new Vue({
     el: '#app',
     data: {
-      ternList: {
+      turnList: {
         1: '●',
         2: '○',
       },
-      tern: 1,
+      turn: 1,
       board: []
     },
     created () {
@@ -68,11 +68,10 @@
         }
         this.board[row][column] = stone;
 
-        console.log(this.board);
+        this.executeTurn(row, column);
 
-        // todo 盤面の他の石をひっくり返す
         google.script.run.withSuccessHandler(() => {
-          this.tern = ( this.tern === 1 ) ? 2 : 1;
+          this.turn = ( this.turn === 1 ) ? 2 : 1;
           this.fetchBoard();
         }).withFailureHandler((error) => {
             console.log(error);
@@ -86,28 +85,43 @@
         }
         // 周りに自分以外の色なければおけない
         if (this.existTargetStoneAround(row, column) === false) {
-          alert("周りに石ないわ");
+          alert("周りにおけるところないわ");
           return false;
         }
-        // todo 実装
         return true;
       },
-      existTargetStoneAround(row, column) {
+      executeTurn(row, column) {
+        const turnTarget = this.getTurnTarget(row, column);
+        for (const key in turnTarget) {
+          const target = turnTarget[key];
+          this.board[target.row][target.column] = this.turnList[this.turn];
+        }
+      },
+      getTurnTarget(row, column) {
         let turnTarget = [];
+        // 上下左右
         turnTarget = this.getTurnTargetListLeft(row, column);
         turnTarget = turnTarget.concat(this.getTurnTargetListRight(row, column));
         turnTarget = turnTarget.concat(this.getTurnTargetListDown(row, column));
         turnTarget = turnTarget.concat(this.getTurnTargetListUp(row, column));
 
-        console.log(turnTarget);
+        // 斜め
+        turnTarget = turnTarget.concat(this.getTurnTargetListSlantingUpperLeft(row, column));
+        turnTarget = turnTarget.concat(this.getTurnTargetListSlantingDownLeft(row, column));
+        turnTarget = turnTarget.concat(this.getTurnTargetListSlantingUpperRight(row, column));
+        turnTarget = turnTarget.concat(this.getTurnTargetListSlantingDownRight(row, column));
 
-        return false;
+        return turnTarget;
+      },
+      existTargetStoneAround(row, column) {
+        const turnTarget = this.getTurnTarget(row, column);
+        return !(turnTarget === []);
       },
       // ひだり見ていく
       getTurnTargetListLeft(row, column) {
-        const targetStone = ( this.tern === 1 ) ? '○' : '●';
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
-        for (let i = column - 1; i > 0; i--) {
+        for (let i = column - 1; i >= 0; i--) {
           if (this.board[row][i] === '　') {
             return [];
           }
@@ -123,7 +137,7 @@
       },
       // みぎ見ていく
       getTurnTargetListRight(row, column) {
-        const targetStone = ( this.tern === 1 ) ? '○' : '●';
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         for (let i = column + 1; i < 8; i++) {
           if (this.board[row][i] === '　') {
@@ -141,9 +155,9 @@
       },
       // うえ見ていく
       getTurnTargetListUp(row, column) {
-        const targetStone = ( this.tern === 1 ) ? '○' : '●';
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
-        for (let j = row - 1; j > 0; j--) {
+        for (let j = row - 1; j >= 0; j--) {
           if (this.board[j][column] === '　') {
             return [];
           }
@@ -159,7 +173,7 @@
       },
       // した見ていく
       getTurnTargetListDown(row, column) {
-        const targetStone = ( this.tern === 1 ) ? '○' : '●';
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         for (let j = row + 1; j < 8; j++) {
           if (this.board[j][column] === '　') {
@@ -172,6 +186,102 @@
             row: j,
             column: column
           });
+        }
+        return turnTarget;
+      },
+      // 左上
+      getTurnTargetListSlantingUpperLeft(row, column) {
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
+        let turnTarget = [];
+        let j = row;
+        for (let i = column - 1; i >= 0; i--) {
+          j--;
+          if (j <= 0) {
+            return [];
+          }
+          if (this.board[j][i] === '　') {
+            return [];
+          }
+          if (this.board[j][i] !== targetStone) {
+            return turnTarget;
+          }
+          turnTarget = turnTarget.concat({
+            row: j,
+            column: i
+          });
+
+        }
+        return turnTarget;
+      },
+      // 左下
+      getTurnTargetListSlantingDownLeft(row, column) {
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
+        let turnTarget = [];
+        let j = row;
+        for (let i = column - 1; i >= 0; i--) {
+          j++;
+          if (j >= 8) {
+            return [];
+          }
+          if (this.board[j][i] === '　') {
+            return [];
+          }
+          if (this.board[j][i] !== targetStone) {
+            return turnTarget;
+          }
+          turnTarget = turnTarget.concat({
+            row: j,
+            column: i
+          });
+
+        }
+        return turnTarget;
+      },
+      // 右上
+      getTurnTargetListSlantingUpperRight(row, column) {
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
+        let turnTarget = [];
+        let j = row;
+        for (let i = column + 1; i < 8; i++) {
+          j--;
+          if (j < 0) {
+            return [];
+          }
+          if (this.board[j][i] === '　') {
+            return [];
+          }
+          if (this.board[j][i] !== targetStone) {
+            return turnTarget;
+          }
+          turnTarget = turnTarget.concat({
+            row: j,
+            column: i
+          });
+
+        }
+        return turnTarget;
+      },
+      // 右下
+      getTurnTargetListSlantingDownRight(row, column) {
+        const targetStone = ( this.turn === 1 ) ? '○' : '●';
+        let turnTarget = [];
+        let j = row;
+        for (let i = column + 1; i < 8; i++) {
+          j++;
+          if (j >= 8) {
+            return [];
+          }
+          if (this.board[j][i] === '　') {
+            return [];
+          }
+          if (this.board[j][i] !== targetStone) {
+            return turnTarget;
+          }
+          turnTarget = turnTarget.concat({
+            row: j,
+            column: i
+          });
+
         }
         return turnTarget;
       }
