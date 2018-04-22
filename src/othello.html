@@ -1,5 +1,5 @@
 <div id="app">
-  {{ turnList[turn] }}のターン({{ turn }})
+  {{ turnList[turn] }}のターン
   <table>
     <tr v-for="(columns, row) in board">
       <td v-for="(value, column) in columns">
@@ -7,10 +7,10 @@
       </td>
     </tr>
   </table>
-
   <table>
     <tr v-for="r in board">
   </table>
+  <button @click="skipTurn">スキップする</button>
 </div>
 <script type="text/javascript">
   var app = new Vue({
@@ -29,6 +29,14 @@
       this.fetchBoard();
     },
     methods: {
+      /**
+       * ターンをスキップする
+       */
+      skipTurn() {
+        this.turn = ( this.turn === 1 ) ? 2 : 1;
+        this.sendTurn(this.turn);
+        this.targetStone = ( this.targetStone === '●' ) ? '○' : '●';
+      },
 
       /**
        * ターンの同期
