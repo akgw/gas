@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@google/clasp": "^1.1.5"
+  },
+  "scripts": {
+    "login": "clasp login",
+    "pull": "clasp pull",
+    "push": "clasp push"
+  }
+}

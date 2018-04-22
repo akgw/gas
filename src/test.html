@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+</head>
+<body>
+<div id="app">
+  {{ ternList[tern] }}のターン({{ tern }})
+  <table>
+    <tr v-for="(rows, column) in board">
+      <td v-for="(value, row) in rows">
+        <button @click="putStone(column, row, ternList[tern])">{{ value }}</button>
+      </td>
+    </tr>
+  </table>
+
+  <table>
+    <tr v-for="r in board">
+  </table>
+</div>
+<script type="text/javascript">
+  var app = new Vue({
+    el: '#app',
+    data: {
+      ternList: {
+        1: '●',
+        2: '○',
+      },
+      tern: 1,
+      board: []
+    },
+    created () {
+      this.fetchBoard();
+    },
+    methods: {
+      fetchBoard() {
+        google.script.run.withSuccessHandler((fetchBoard) => {
+          this.board = fetchBoard
+        }).withFailureHandler((error) => {
+          console.log(error);
+        }).sendFetchBoard();
+      },
+      putStone(column, row, stone) {
+        google.script.run.withSuccessHandler(() => {
+          this.tern = ( this.tern === 1 ) ? 2 : 1;
+          this.fetchBoard();
+        }).withFailureHandler((error) => {
+            console.log(error);
+        }).sendPutStone(column, row, stone);
+      }
+    }
+  })
+</script>
+</body>
+</html>
+
+
