@@ -8,9 +8,9 @@
 <div id="app">
   {{ ternList[tern] }}のターン({{ tern }})
   <table>
-    <tr v-for="(rows, column) in board">
-      <td v-for="(value, row) in rows">
-        <button @click="putStone(column, row, ternList[tern])">{{ value }}</button>
+    <tr v-for="(columns, row) in board">
+      <td v-for="(value, column) in columns">
+        <button @click="putStone(row, column, ternList[tern])">{{ value }}</button>
       </td>
     </tr>
   </table>
@@ -44,10 +44,10 @@
       },
       initBoard() {
         const initStonePositionList = [
-          {column:3, row:3, stone: '○'},
-          {column:3, row:4, stone: '●'},
-          {column:4, row:3, stone: '●'},
-          {column:4, row:4, stone: '○'}
+          {row:3, column:3, stone: '○'},
+          {row:3, column:4, stone: '●'},
+          {row:4, column:3, stone: '●'},
+          {row:4, column:4, stone: '○'}
         ];
 
         if (this.board[4][4] === '　') {
@@ -56,24 +56,29 @@
             google.script.run.withSuccessHandler(() => {
             }).withFailureHandler((error) => {
               console.log(error);
-            }).sendPutStone(initStone['column'], initStone['row'], initStone['stone']);
+            }).sendPutStone(initStone['row'], initStone['column'], initStone['stone']);
           }
           this.fetchBoard();
         }
       },
-      putStone(column, row, stone) {
-        if (this.puttableStone(column, row, stone) === false) {
+      putStone(row, column, stone) {
+        if (this.puttableStone(row, column, stone) === false) {
           alert("置けません");
           return;
         }
+        this.board[row][column] = stone;
+
+        console.log(this.board);
+
+        // todo 盤面の他の石をひっくり返す
         google.script.run.withSuccessHandler(() => {
           this.tern = ( this.tern === 1 ) ? 2 : 1;
           this.fetchBoard();
         }).withFailureHandler((error) => {
             console.log(error);
-        }).sendPutStone(column, row, stone);
+        }).sendWriteBoard(this.board);
       },
-      puttableStone(column, row, stone) {
+      puttableStone(row, column, stone) {
         // todo 実装
         return true;
       }

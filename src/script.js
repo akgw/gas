@@ -19,33 +19,51 @@ function sendFetchBoard() {
       values[key1][key2] = '　';
     }
   }
-//  Logger.log(values);
-
   return values;
+}
+
+/**
+ * 盤面の状態を更新
+ */
+function sendWriteBoard(board) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('board');
+  for (var key in board) {
+    var row = parseInt(key) + 1;
+    var range = sheet.getRange("A" + row + ":H" + row);
+
+    range.setValues([board[key]]);
+  }
+
 }
 
 /**
  * 盤面関係なくとりあえず更新
  */
-function sendPutStone(column, row, stone) {
-  [column, row] = convertColumnRow(column, row);
+function sendPutStone(row, column, stone) {
+  row = convertRow(row);
+  column = convertColumn(column);
   const sheet = SpreadsheetApp.getActive().getSheetByName('board');
-  sheet.getRange(row + column).setValue(stone);
+  sheet.getRange(column + row).setValue(stone);
 }
 
 /**
- * カラムを変換
+ * 列を変換
  *
- * @param column
  * @param row
  * @returns {*[]}
  */
-function convertColumnRow(column, row) {
-  column += 1;
+function convertRow(row) {
+  row += 1;
+  return row;
+}
 
-  /**
-   * シート用に変換
-   */
+/**
+ * 行を変換
+ *
+ * @param column
+ * @returns {*}
+ */
+function convertColumn(column) {
   const convertForSheet = {
     0: 'A',
     1: 'B',
@@ -57,6 +75,6 @@ function convertColumnRow(column, row) {
     7: 'H',
   };
 
-  return [column, convertForSheet[row]];
+  return convertForSheet[column];
 }
 
