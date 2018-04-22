@@ -1,6 +1,26 @@
 function doGet(e) {
   Logger.log(e);
-  return HtmlService.createHtmlOutputFromFile('test');
+  var template = HtmlService.createTemplateFromFile('main');
+  return template.evaluate()
+}
+
+/**
+ * ターンを取得
+ * @returns {*}
+ */
+function sendFetchTurn() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('board');
+  const value = sheet.getRange("J1").getValue();
+  return value === '' ? 1 : value;
+}
+
+/**
+ * ターンを更新
+ * @returns {*}
+ */
+function sendUpdateTurn(turn) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('board');
+  sheet.getRange("J1").setValue(turn);
 }
 
 /**

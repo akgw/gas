@@ -1,10 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <base target="_top">
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
-</head>
-<body>
 <div id="app">
   {{ turnList[turn] }}のターン({{ turn }})
   <table>
@@ -27,13 +20,40 @@
         1: '●',
         2: '○',
       },
-      turn: 1,
+      turn: '',
+      targetStone: (this.turn === 1) ? '●' : '○',
       board: []
     },
     created () {
+      this.fetchTurn();
       this.fetchBoard();
     },
     methods: {
+
+      /**
+       * ターンの同期
+       */
+      fetchTurn() {
+        google.script.run.withSuccessHandler((fetchTurn) => {
+          this.turn = fetchTurn;
+          this.targetStone = (this.turn === 1) ? '○' : '●';
+        }).withFailureHandler((error) => {
+          console.log(error);
+        }).sendFetchTurn();
+      },
+
+      /**
+       * ターンを更新
+       */
+      sendTurn() {
+        google.script.run.withSuccessHandler().withFailureHandler((error) => {
+          console.log(error);
+        }).sendUpdateTurn(this.turn);
+        },
+
+      /**
+       * 盤面の同期
+       */
       fetchBoard() {
         google.script.run.withSuccessHandler((fetchBoard) => {
           this.board = fetchBoard;
@@ -42,6 +62,10 @@
           console.log(error);
         }).sendFetchBoard();
       },
+
+      /**
+       * 盤面の初期化
+       */
       initBoard() {
         const initStonePositionList = [
           {row:3, column:3, stone: '○'},
@@ -61,9 +85,16 @@
           this.fetchBoard();
         }
       },
+
+      /**
+       * 石を置く
+       *
+       * @param row
+       * @param column
+       * @param stone
+       */
       putStone(row, column, stone) {
         if (this.puttableStone(parseInt(row), parseInt(column), stone) === false) {
-          alert("置けません");
           return;
         }
         this.board[row][column] = stone;
@@ -72,11 +103,67 @@
 
         google.script.run.withSuccessHandler(() => {
           this.turn = ( this.turn === 1 ) ? 2 : 1;
+          this.sendTurn(this.turn);
+          this.targetStone = ( this.targetStone === '●' ) ? '○' : '●';
           this.fetchBoard();
         }).withFailureHandler((error) => {
-            console.log(error);
+          console.log(error);
         }).sendWriteBoard(this.board);
+
+        // ジャッジ処理
+        if (this.isFinished() === true) {
+          alert("終了");
+        }
       },
+      /**
+       * 終了判定
+       */
+      isFinished() {
+        // 全部同じ色で埋まってるか
+        const counter = this.countStones();
+        if (counter["1"] === 0 || counter["2"] === 0) {
+          return true;
+        }
+        if (counter["1"] + counter["2"] >= 64) {
+          return true;
+        }
+        return false;
+      },
+
+      /**
+       * 盤面の石の数をカウント
+       */
+      countStones() {
+        let counter = {
+          1: 0,
+          2: 0,
+        };
+        for(const key in this.board) {
+          for (const key2 in this.board[key]) {
+            switch (this.board[key][key2]) {
+              case '○':
+                counter["1"] += 1;
+                break;
+              case '●':
+                counter["2"] += 1;
+                break;
+
+              default:
+                break;
+            }
+          }
+        }
+        return counter;
+      },
+
+      /**
+       * 石置けるかどうか
+       *
+       * @param row
+       * @param column
+       * @param stone
+       * @returns {boolean}
+       */
       puttableStone(row, column, stone) {
         // 既においてあったら置けない
         if (this.board[row][column] === '●' || this.board[row][column] === '○') {
@@ -90,6 +177,13 @@
         }
         return true;
       },
+
+      /**
+       * 周りの石をひっくり返す
+       *
+       * @param row
+       * @param column
+       */
       executeTurn(row, column) {
         const turnTarget = this.getTurnTarget(row, column);
         for (const key in turnTarget) {
@@ -97,6 +191,14 @@
           this.board[target.row][target.column] = this.turnList[this.turn];
         }
       },
+
+      /**
+       * ひっくり返す対象を取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTarget(row, column) {
         let turnTarget = [];
         // 上下左右
@@ -113,19 +215,33 @@
 
         return turnTarget;
       },
+
+      /**
+       * ひっくり返す対象があるかどうか
+       *
+       * @param row
+       * @param column
+       * @returns {boolean}
+       */
       existTargetStoneAround(row, column) {
         const turnTarget = this.getTurnTarget(row, column);
         return (turnTarget.length !== 0);
       },
-      // ひだり見ていく
+      /**
+       * 左側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListLeft(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
+        console.log(this.targetStone);
         let turnTarget = [];
         for (let i = column - 1; i >= 0; i--) {
           if (this.board[row][i] === '　') {
             return [];
           }
-          if (this.board[row][i] !== targetStone) {
+          if (this.board[row][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -135,15 +251,20 @@
         }
         return turnTarget;
       },
-      // みぎ見ていく
+      /**
+       * 右側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListRight(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         for (let i = column + 1; i < 8; i++) {
           if (this.board[row][i] === '　') {
             return [];
           }
-          if (this.board[row][i] !== targetStone) {
+          if (this.board[row][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -153,15 +274,20 @@
         }
         return turnTarget;
       },
-      // うえ見ていく
+      /**
+       * 上側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListUp(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         for (let j = row - 1; j >= 0; j--) {
           if (this.board[j][column] === '　') {
             return [];
           }
-          if (this.board[j][column] !== targetStone) {
+          if (this.board[j][column] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -171,15 +297,20 @@
         }
         return turnTarget;
       },
-      // した見ていく
+      /**
+       * 下側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListDown(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         for (let j = row + 1; j < 8; j++) {
           if (this.board[j][column] === '　') {
             return [];
           }
-          if (this.board[j][column] !== targetStone) {
+          if (this.board[j][column] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -189,9 +320,14 @@
         }
         return turnTarget;
       },
-      // 左上
+      /**
+       * 左上側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListSlantingUpperLeft(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         let j = row;
         for (let i = column - 1; i >= 0; i--) {
@@ -202,7 +338,7 @@
           if (this.board[j][i] === '　') {
             return [];
           }
-          if (this.board[j][i] !== targetStone) {
+          if (this.board[j][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -213,9 +349,14 @@
         }
         return turnTarget;
       },
-      // 左下
+      /**
+       * 左下側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListSlantingDownLeft(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         let j = row;
         for (let i = column - 1; i >= 0; i--) {
@@ -226,7 +367,7 @@
           if (this.board[j][i] === '　') {
             return [];
           }
-          if (this.board[j][i] !== targetStone) {
+          if (this.board[j][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -237,9 +378,14 @@
         }
         return turnTarget;
       },
-      // 右上
+      /**
+       * 右上側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListSlantingUpperRight(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         let j = row;
         for (let i = column + 1; i < 8; i++) {
@@ -250,7 +396,7 @@
           if (this.board[j][i] === '　') {
             return [];
           }
-          if (this.board[j][i] !== targetStone) {
+          if (this.board[j][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -261,9 +407,14 @@
         }
         return turnTarget;
       },
-      // 右下
+      /**
+       * 右下側の石でひっくり返せるやつを取得
+       *
+       * @param row
+       * @param column
+       * @returns {Array}
+       */
       getTurnTargetListSlantingDownRight(row, column) {
-        const targetStone = ( this.turn === 1 ) ? '○' : '●';
         let turnTarget = [];
         let j = row;
         for (let i = column + 1; i < 8; i++) {
@@ -274,7 +425,7 @@
           if (this.board[j][i] === '　') {
             return [];
           }
-          if (this.board[j][i] !== targetStone) {
+          if (this.board[j][i] !== this.targetStone) {
             return turnTarget;
           }
           turnTarget = turnTarget.concat({
@@ -288,7 +439,3 @@
     }
   })
 </script>
-</body>
-</html>
-
-
