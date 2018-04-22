@@ -115,7 +115,7 @@
       },
       existTargetStoneAround(row, column) {
         const turnTarget = this.getTurnTarget(row, column);
-        return !(turnTarget === []);
+        return (turnTarget.length !== 0);
       },
       // ひだり見ていく
       getTurnTargetListLeft(row, column) {
