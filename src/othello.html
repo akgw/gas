@@ -243,7 +243,6 @@
        * @returns {Array}
        */
       getTurnTargetListLeft(row, column) {
-        console.log(this.targetStone);
         let turnTarget = [];
         for (let i = column - 1; i >= 0; i--) {
           if (this.board[row][i] === '　') {
@@ -257,7 +256,7 @@
             column: i
           });
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 右側の石でひっくり返せるやつを取得
@@ -280,7 +279,7 @@
             column: i
           });
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 上側の石でひっくり返せるやつを取得
@@ -303,7 +302,7 @@
             column: column
           });
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 下側の石でひっくり返せるやつを取得
@@ -326,7 +325,7 @@
             column: column
           });
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 左上側の石でひっくり返せるやつを取得
@@ -340,12 +339,14 @@
         let j = row;
         for (let i = column - 1; i >= 0; i--) {
           j--;
-          if (j <= 0) {
+          if (j < 0) {
             return [];
           }
+
           if (this.board[j][i] === '　') {
             return [];
           }
+
           if (this.board[j][i] !== this.targetStone) {
             return turnTarget;
           }
@@ -353,9 +354,8 @@
             row: j,
             column: i
           });
-
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 左下側の石でひっくり返せるやつを取得
@@ -382,9 +382,8 @@
             row: j,
             column: i
           });
-
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 右上側の石でひっくり返せるやつを取得
@@ -411,9 +410,8 @@
             row: j,
             column: i
           });
-
         }
-        return turnTarget;
+        return [];
       },
       /**
        * 右下側の石でひっくり返せるやつを取得
@@ -440,9 +438,8 @@
             row: j,
             column: i
           });
-
         }
-        return turnTarget;
+        return [];
       }
     }
   })
