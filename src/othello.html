@@ -1,16 +1,19 @@
 <div id="app">
-  {{ turnList[turn] }}のターン
-  <table>
-    <tr v-for="(columns, row) in board">
-      <td v-for="(value, column) in columns">
-        <button @click="putStone(row, column, turnList[turn])">{{ value }}</button>
-      </td>
-    </tr>
-  </table>
-  <table>
-    <tr v-for="r in board">
-  </table>
-  <button @click="skipTurn">スキップする</button>
+  <div class="othello-header">
+    <p>{{ turnList[turn] }}のターン</p>
+    <p>●：{{ stoneCounter[1] }}</p>
+    <p>○：{{ stoneCounter[2] }}</p>
+  </div>
+  <div class="othello-body">
+    <table class="board">
+      <tr v-for="(columns, row) in board">
+        <td v-for="(value, column) in columns" class="frame">
+          <button class="inframe" @click="putStone(row, column, turnList[turn])">{{ value }}</button>
+        </td>
+      </tr>
+    </table>
+    <button @click="skipTurn">スキップする</button>
+  </div>
 </div>
 <script type="text/javascript">
   var app = new Vue({
@@ -22,7 +25,11 @@
       },
       turn: '',
       targetStone: (this.turn === 1) ? '●' : '○',
-      board: []
+      board: [],
+      stoneCounter: {
+        1: 0,
+        2: 0,
+      }
     },
     created () {
       this.fetchTurn();
@@ -66,6 +73,7 @@
         google.script.run.withSuccessHandler((fetchBoard) => {
           this.board = fetchBoard;
           this.initBoard();
+          this.countStones();
         }).withFailureHandler((error) => {
           console.log(error);
         }).sendFetchBoard();
@@ -128,11 +136,11 @@
        */
       isFinished() {
         // 全部同じ色で埋まってるか
-        const counter = this.countStones();
-        if (counter["1"] === 0 || counter["2"] === 0) {
+        this.countStones();
+        if (this.stoneCounter["1"] === 0 || this.stoneCounter["2"] === 0) {
           return true;
         }
-        if (counter["1"] + counter["2"] >= 64) {
+        if (this.stoneCounter["1"] + this.stoneCounter["2"] >= 64) {
           return true;
         }
         return false;
@@ -142,18 +150,19 @@
        * 盤面の石の数をカウント
        */
       countStones() {
-        let counter = {
+        this.stoneCounter = {
           1: 0,
           2: 0,
         };
+
         for(const key in this.board) {
           for (const key2 in this.board[key]) {
             switch (this.board[key][key2]) {
               case '○':
-                counter["1"] += 1;
+                this.stoneCounter["1"] += 1;
                 break;
               case '●':
-                counter["2"] += 1;
+                this.stoneCounter["2"] += 1;
                 break;
 
               default:
@@ -161,7 +170,6 @@
             }
           }
         }
-        return counter;
       },
 
       /**
@@ -444,3 +452,31 @@
     }
   })
 </script>
+<style>
+  .frame {
+    border: 1px solid black;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+  }
+  .inframe {
+    font-size: 1.5em;
+    width:40px;
+    height:40px;
+    padding: 0;
+    border: 0;
+    background-color: #04B431;
+  }
+  .othello-header {
+    text-align: left;
+  }
+  .othello-header > p {
+    margin: 5px;
+  }
+  .othello-body {
+    text-align: left;
+  }
+  .board {
+    border-spacing: 0;
+  }
+</style>
